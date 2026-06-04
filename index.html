@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema V&M</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
@@ -26,6 +27,7 @@
     .btn-secondary { background: #f0f2f5; color: #333; }
     .btn-success { background: #27ae60; color: white; }
     .btn-danger { background: #e74c3c; color: white; }
+    .btn-scan { background: #2980b9; color: white; }
     input, select, textarea { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 12px; }
     label { font-size: 14px; color: #555; margin-bottom: 4px; display: block; }
     .produto-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
@@ -54,6 +56,8 @@
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
     .tab { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 14px; cursor: pointer; white-space: nowrap; }
     .tab.active { background: #6c3483; color: white; border-color: #6c3483; }
+    #scanner-container { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    #scanner-resultado { padding: 10px; background: #d5f5e3; border-radius: 10px; color: #27ae60; font-weight: bold; margin-bottom: 12px; display: none; }
   </style>
 </head>
 <body>
@@ -63,7 +67,6 @@
   <span id="sync-status" style="font-size:12px">● Online</span>
 </div>
 
-<!-- PÁGINAS -->
 <div id="page-dashboard" class="page active">
   <div class="stats-grid">
     <div class="stat-card"><div class="value" id="stat-produtos">0</div><div class="label">Produtos</div></div>
@@ -119,7 +122,6 @@
   </div>
 </div>
 
-<!-- NAV BOTTOM -->
 <nav class="nav-bottom">
   <button class="nav-btn active" onclick="navegarPara('dashboard')"><span>🏠</span>Início</button>
   <button class="nav-btn" onclick="navegarPara('produtos')"><span>📦</span>Produtos</button>
@@ -135,6 +137,11 @@
       <h2>📦 Novo Produto</h2>
       <button class="close-btn" onclick="fecharModal('modal-produto')">✕</button>
     </div>
+    <button class="btn btn-scan" onclick="abrirScanner('modal-produto')">📷 Ler Código de Barras</button>
+    <div id="scanner-container-produto"></div>
+    <div id="scanner-resultado-produto" class="alert alert-success" style="display:none"></div>
+    <label>Código de Barras</label>
+    <input type="text" id="prod-codigo" placeholder="Ex: 7891234567890">
     <label>Nome do Produto</label>
     <input type="text" id="prod-nome" placeholder="Ex: Batom Vermelho">
     <label>Categoria</label>
@@ -177,6 +184,9 @@
       <h2>🛒 Nova Venda</h2>
       <button class="close-btn" onclick="fecharModal('modal-venda')">✕</button>
     </div>
+    <button class="btn btn-scan" onclick="abrirScanner('modal-venda')">📷 Ler Código de Barras</button>
+    <div id="scanner-container-venda"></div>
+    <div id="scanner-resultado-venda" class="alert alert-success" style="display:none"></div>
     <label>Cliente (opcional)</label>
     <select id="venda-cliente">
       <option value="">Selecionar cliente...</option>
@@ -207,7 +217,6 @@
   </div>
 </div>
 
-<!-- FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -248,6 +257,8 @@
   let clientesCache = [];
   let vendasCache = [];
   let carrinhoItens = [];
+  let scannerAtivo = null;
+  let scannerContexto = null;
 
   function navegarPara(pagina) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -264,6 +275,7 @@
   }
 
   function fecharModal(id) {
+    pararScanner();
     document.getElementById(id).classList.remove('active');
   }
 
@@ -273,9 +285,80 @@
     setTimeout(() => el.innerHTML = '', 3000);
   }
 
+  // SCANNER
+  function abrirScanner(contexto) {
+    scannerContexto = contexto;
+    const containerId = contexto === 'modal-produto' ? 'scanner-container-produto' : 'scanner-container-venda';
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div id="leitor" style="width:100%"></div>';
+
+    if(scannerAtivo) { scannerAtivo.clear(); scannerAtivo = null; }
+
+    scannerAtivo = new Html5Qrcode("leitor");
+    scannerAtivo.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      (codigoLido) => {
+        pararScanner();
+        if(contexto === 'modal-produto') {
+          document.getElementById('prod-codigo').value = codigoLido;
+          const resultEl = document.getElementById('scanner-resultado-produto');
+          resultEl.style.display = 'block';
+          resultEl.textContent = '✅ Código lido: ' + codigoLido;
+          buscarProdutoPorCodigo(codigoLido);
+        } else {
+          const resultEl = document.getElementById('scanner-resultado-venda');
+          resultEl.style.display = 'block';
+          resultEl.textContent = '✅ Código lido: ' + codigoLido;
+          selecionarProdutoPorCodigo(codigoLido);
+        }
+      },
+      (erro) => {}
+    ).catch(err => {
+      container.innerHTML = '<p style="color:#e74c3c;padding:10px">❌ Câmera não permitida. Permita o acesso à câmera nas configurações do navegador.</p>';
+    });
+  }
+
+  function pararScanner() {
+    if(scannerAtivo) {
+      scannerAtivo.stop().catch(()=>{});
+      scannerAtivo = null;
+    }
+    const c1 = document.getElementById('scanner-container-produto');
+    const c2 = document.getElementById('scanner-container-venda');
+    if(c1) c1.innerHTML = '';
+    if(c2) c2.innerHTML = '';
+  }
+
+  function buscarProdutoPorCodigo(codigo) {
+    const prod = produtosCache.find(p => p.codigo === codigo);
+    if(prod) {
+      document.getElementById('prod-nome').value = prod.nome;
+      document.getElementById('prod-categoria').value = prod.categoria || '';
+      document.getElementById('prod-custo').value = prod.custo || '';
+      document.getElementById('prod-venda').value = prod.venda || '';
+      document.getElementById('prod-estoque').value = prod.estoque || '';
+      document.getElementById('prod-estoque-min').value = prod.estoqueMin || '';
+    }
+  }
+
+  function selecionarProdutoPorCodigo(codigo) {
+    const prod = produtosCache.find(p => p.codigo === codigo);
+    if(prod) {
+      const sel = document.getElementById('venda-produto');
+      sel.value = prod.id;
+    } else {
+      const resultEl = document.getElementById('scanner-resultado-venda');
+      resultEl.style.display = 'block';
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = '⚠️ Produto não encontrado. Cadastre-o primeiro.';
+    }
+  }
+
   // PRODUTOS
   async function salvarProduto() {
     const nome = document.getElementById('prod-nome').value.trim();
+    const codigo = document.getElementById('prod-codigo').value.trim();
     const categoria = document.getElementById('prod-categoria').value.trim();
     const custo = parseFloat(document.getElementById('prod-custo').value) || 0;
     const venda = parseFloat(document.getElementById('prod-venda').value) || 0;
@@ -284,15 +367,11 @@
     if(!nome) { mostrarMsg('msg-produto','Digite o nome do produto','error'); return; }
     try {
       await window.addDoc(window.collection(window.db, 'produtos'), {
-        nome, categoria, custo, venda, estoque, estoqueMin, criadoEm: new Date()
+        nome, codigo, categoria, custo, venda, estoque, estoqueMin, criadoEm: new Date()
       });
       mostrarMsg('msg-produto','Produto salvo com sucesso!','success');
-      document.getElementById('prod-nome').value = '';
-      document.getElementById('prod-categoria').value = '';
-      document.getElementById('prod-custo').value = '';
-      document.getElementById('prod-venda').value = '';
-      document.getElementById('prod-estoque').value = '';
-      document.getElementById('prod-estoque-min').value = '';
+      ['prod-nome','prod-codigo','prod-categoria','prod-custo','prod-venda','prod-estoque','prod-estoque-min'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('scanner-resultado-produto').style.display = 'none';
       carregarProdutos();
       carregarDashboard();
     } catch(e) { mostrarMsg('msg-produto','Erro ao salvar: '+e.message,'error'); }
@@ -312,7 +391,7 @@
       <div class="produto-card">
         <div class="produto-info">
           <h3>${p.nome}</h3>
-          <p>${p.categoria || 'Sem categoria'}</p>
+          <p>${p.categoria || 'Sem categoria'}${p.codigo ? ' • ' + p.codigo : ''}</p>
           <span class="badge ${p.estoque <= 0 ? 'badge-zero' : p.estoque <= p.estoqueMin ? 'badge-low' : 'badge-ok'}">
             ${p.estoque <= 0 ? 'Sem estoque' : p.estoque <= p.estoqueMin ? 'Estoque baixo' : 'Em estoque'}: ${p.estoque}
           </span>
@@ -327,7 +406,7 @@
 
   function filtrarProdutos() {
     const busca = document.getElementById('busca-produto').value.toLowerCase();
-    const filtrado = produtosCache.filter(p => p.nome.toLowerCase().includes(busca) || (p.categoria||'').toLowerCase().includes(busca));
+    const filtrado = produtosCache.filter(p => p.nome.toLowerCase().includes(busca) || (p.categoria||'').toLowerCase().includes(busca) || (p.codigo||'').includes(busca));
     renderizarProdutos(filtrado);
   }
 
@@ -349,9 +428,7 @@
         nome, whatsapp, obs, divida: 0, totalComprado: 0, criadoEm: new Date()
       });
       mostrarMsg('msg-cliente','Cliente salvo!','success');
-      document.getElementById('cli-nome').value = '';
-      document.getElementById('cli-whatsapp').value = '';
-      document.getElementById('cli-obs').value = '';
+      ['cli-nome','cli-whatsapp','cli-obs'].forEach(id => document.getElementById(id).value = '');
       carregarClientes();
       carregarDashboard();
     } catch(e) { mostrarMsg('msg-cliente','Erro: '+e.message,'error'); }
@@ -444,12 +521,10 @@
         clienteId, clienteNome: cliente?.nome || 'Consumidor', itens: carrinhoItens,
         subtotal, desconto, total, pagamento, obs, status: pagamento === 'fiado' ? 'pendente' : 'pago', criadoEm: new Date()
       });
-      // Atualizar estoque
       for(const item of carrinhoItens) {
         const prod = produtosCache.find(p => p.id === item.id);
         if(prod) await window.updateDoc(window.doc(window.db,'produtos',item.id), { estoque: prod.estoque - item.qtd });
       }
-      // Atualizar dívida do cliente
       if(clienteId && pagamento === 'fiado') {
         const cli = clientesCache.find(c => c.id === clienteId);
         await window.updateDoc(window.doc(window.db,'clientes',clienteId), { divida: (cli?.divida||0) + total, totalComprado: (cli?.totalComprado||0) + total });
@@ -531,7 +606,7 @@
     const snapP = await window.getDocs(window.collection(window.db,'produtos'));
     const snapC = await window.getDocs(window.collection(window.db,'clientes'));
     const snapV = await window.getDocs(window.collection(window.db,'vendas'));
-    let totalReceber = 0, baixos = [];
+    let totalReceber = 0;
     snapC.forEach(d => { const c = d.data(); totalReceber += c.divida||0; });
     const prodsBaixo = [];
     snapP.forEach(d => { const p = d.data(); if(p.estoque <= p.estoqueMin) prodsBaixo.push(p); });
@@ -559,6 +634,7 @@
   window.navegarPara = navegarPara;
   window.abrirModal = abrirModal;
   window.fecharModal = fecharModal;
+  window.abrirScanner = abrirScanner;
   window.carregarDashboard = carregarDashboard;
   window.carregarProdutos = carregarProdutos;
   window.carregarClientes = carregarClientes;
