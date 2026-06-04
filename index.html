@@ -228,6 +228,81 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR PRODUTO -->
+<div id="modal-editar-produto" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✏️ Editar Produto</h2>
+      <button class="close-btn" onclick="fecharModal('modal-editar-produto')">✕</button>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <label>Nome do Produto</label>
+    <input type="text" id="edit-prod-nome" placeholder="Ex: Batom Vermelho">
+    <label>Categoria</label>
+    <input type="text" id="edit-prod-categoria" placeholder="Ex: Maquiagem">
+    <label>Preço de Custo (R$)</label>
+    <input type="number" id="edit-prod-custo" placeholder="0,00" step="0.01">
+    <label>Preço de Venda (R$)</label>
+    <input type="number" id="edit-prod-venda" placeholder="0,00" step="0.01">
+    <label>Estoque Atual</label>
+    <input type="number" id="edit-prod-estoque" placeholder="0">
+    <label>Estoque Mínimo</label>
+    <input type="number" id="edit-prod-estoque-min" placeholder="5">
+    <div id="msg-editar-produto"></div>
+    <button class="btn btn-primary" onclick="salvarEdicaoProduto()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRODUTO -->
+<div id="modal-editar-produto" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✏️ Editar Produto</h2>
+      <button class="close-btn" onclick="fecharModal('modal-editar-produto')">✕</button>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <label>Nome do Produto</label>
+    <input type="text" id="edit-prod-nome" placeholder="Ex: Batom Vermelho">
+    <label>Categoria</label>
+    <input type="text" id="edit-prod-categoria" placeholder="Ex: Maquiagem">
+    <label>Preço de Custo (R$)</label>
+    <input type="number" id="edit-prod-custo" placeholder="0,00" step="0.01">
+    <label>Preço de Venda (R$)</label>
+    <input type="number" id="edit-prod-venda" placeholder="0,00" step="0.01">
+    <label>Estoque Atual</label>
+    <input type="number" id="edit-prod-estoque" placeholder="0">
+    <label>Estoque Mínimo</label>
+    <input type="number" id="edit-prod-estoque-min" placeholder="5">
+    <div id="msg-editar-produto"></div>
+    <button class="btn btn-primary" onclick="salvarEdicaoProduto()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRODUTO -->
+<div id="modal-editar-produto" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✏️ Editar Produto</h2>
+      <button class="close-btn" onclick="fecharModal('modal-editar-produto')">✕</button>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <label>Nome do Produto</label>
+    <input type="text" id="edit-prod-nome" placeholder="Ex: Batom Vermelho">
+    <label>Categoria</label>
+    <input type="text" id="edit-prod-categoria" placeholder="Ex: Maquiagem">
+    <label>Preço de Custo (R$)</label>
+    <input type="number" id="edit-prod-custo" placeholder="0,00" step="0.01">
+    <label>Preço de Venda (R$)</label>
+    <input type="number" id="edit-prod-venda" placeholder="0,00" step="0.01">
+    <label>Estoque Atual</label>
+    <input type="number" id="edit-prod-estoque" placeholder="0">
+    <label>Estoque Mínimo</label>
+    <input type="number" id="edit-prod-estoque-min" placeholder="5">
+    <div id="msg-editar-produto"></div>
+    <button class="btn btn-primary" onclick="salvarEdicaoProduto()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -418,6 +493,7 @@
         </div>
         <div style="text-align:right">
           <div class="produto-preco">R$ ${(p.venda||0).toFixed(2)}</div>
+          <button onclick="editarProduto('${p.id}')" style="margin-top:8px;padding:6px 12px;background:#eaf0fb;color:#2980b9;border:none;border-radius:8px;cursor:pointer;font-size:13px">✏️</button>
           <button onclick="excluirProduto('${p.id}')" style="margin-top:8px;padding:6px 12px;background:#fadbd8;color:#e74c3c;border:none;border-radius:8px;cursor:pointer;font-size:13px">🗑️</button>
         </div>
       </div>`).join('');
@@ -634,6 +710,64 @@
     }
   }
 
+  function editarProduto(id) {
+    const p = produtosCache.find(p => p.id === id);
+    if(!p) return;
+    document.getElementById('edit-prod-id').value = p.id;
+    document.getElementById('edit-prod-nome').value = p.nome || '';
+    document.getElementById('edit-prod-categoria').value = p.categoria || '';
+    document.getElementById('edit-prod-custo').value = p.custo || '';
+    document.getElementById('edit-prod-venda').value = p.venda || '';
+    document.getElementById('edit-prod-estoque').value = p.estoque || '';
+    document.getElementById('edit-prod-estoque-min').value = p.estoqueMin || '';
+    abrirModal('modal-editar-produto');
+  }
+
+  async function salvarEdicaoProduto() {
+    const id = document.getElementById('edit-prod-id').value;
+    const nome = document.getElementById('edit-prod-nome').value.trim();
+    const categoria = document.getElementById('edit-prod-categoria').value.trim();
+    const custo = parseFloat(document.getElementById('edit-prod-custo').value) || 0;
+    const venda = parseFloat(document.getElementById('edit-prod-venda').value) || 0;
+    const estoque = parseInt(document.getElementById('edit-prod-estoque').value) || 0;
+    const estoqueMin = parseInt(document.getElementById('edit-prod-estoque-min').value) || 5;
+    if(!nome) { mostrarMsg('msg-editar-produto','Digite o nome','error'); return; }
+    try {
+      await window.updateDoc(window.doc(window.db,'produtos',id), { nome, categoria, custo, venda, estoque, estoqueMin });
+      mostrarMsg('msg-editar-produto','Produto atualizado!','success');
+      setTimeout(() => { fecharModal('modal-editar-produto'); carregarProdutos(); carregarDashboard(); }, 1000);
+    } catch(e) { mostrarMsg('msg-editar-produto','Erro: '+e.message,'error'); }
+  }
+
+  function editarProduto(id) {
+    const p = produtosCache.find(p => p.id === id);
+    if(!p) return;
+    document.getElementById('edit-prod-id').value = p.id;
+    document.getElementById('edit-prod-nome').value = p.nome || '';
+    document.getElementById('edit-prod-categoria').value = p.categoria || '';
+    document.getElementById('edit-prod-custo').value = p.custo || '';
+    document.getElementById('edit-prod-venda').value = p.venda || '';
+    document.getElementById('edit-prod-estoque').value = p.estoque || '';
+    document.getElementById('edit-prod-estoque-min').value = p.estoqueMin || '';
+    abrirModal('modal-editar-produto');
+  }
+
+  async function salvarEdicaoProduto() {
+    const id = document.getElementById('edit-prod-id').value;
+    const nome = document.getElementById('edit-prod-nome').value.trim();
+    const categoria = document.getElementById('edit-prod-categoria').value.trim();
+    const custo = parseFloat(document.getElementById('edit-prod-custo').value) || 0;
+    const venda = parseFloat(document.getElementById('edit-prod-venda').value) || 0;
+    const estoque = parseInt(document.getElementById('edit-prod-estoque').value) || 0;
+    const estoqueMin = parseInt(document.getElementById('edit-prod-estoque-min').value) || 5;
+    if(!nome) { mostrarMsg('msg-editar-produto','Digite o nome','error'); return; }
+    try {
+      await window.updateDoc(window.doc(window.db,'produtos',id), { nome, categoria, custo, venda, estoque, estoqueMin });
+      mostrarMsg('msg-editar-produto','Produto atualizado!','success');
+      setTimeout(() => { fecharModal('modal-editar-produto'); carregarProdutos(); carregarDashboard(); }, 1000);
+    } catch(e) { mostrarMsg('msg-editar-produto','Erro: '+e.message,'error'); }
+  }
+
   window.navegarPara = navegarPara;
   window.abrirModal = abrirModal;
   window.fecharModal = fecharModal;
@@ -657,6 +791,12 @@
   window.carregarProdutos = carregarProdutos;
   window.carregarClientes = carregarClientes;
   window.carregarVendas = carregarVendas;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
   window.carregarFinanceiro = carregarFinanceiro;
 </script>
 
@@ -891,6 +1031,56 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR PRODUTO -->
+<div id="modal-editar-produto" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✏️ Editar Produto</h2>
+      <button class="close-btn" onclick="fecharModal('modal-editar-produto')">✕</button>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <label>Nome do Produto</label>
+    <input type="text" id="edit-prod-nome" placeholder="Ex: Batom Vermelho">
+    <label>Categoria</label>
+    <input type="text" id="edit-prod-categoria" placeholder="Ex: Maquiagem">
+    <label>Preço de Custo (R$)</label>
+    <input type="number" id="edit-prod-custo" placeholder="0,00" step="0.01">
+    <label>Preço de Venda (R$)</label>
+    <input type="number" id="edit-prod-venda" placeholder="0,00" step="0.01">
+    <label>Estoque Atual</label>
+    <input type="number" id="edit-prod-estoque" placeholder="0">
+    <label>Estoque Mínimo</label>
+    <input type="number" id="edit-prod-estoque-min" placeholder="5">
+    <div id="msg-editar-produto"></div>
+    <button class="btn btn-primary" onclick="salvarEdicaoProduto()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRODUTO -->
+<div id="modal-editar-produto" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>✏️ Editar Produto</h2>
+      <button class="close-btn" onclick="fecharModal('modal-editar-produto')">✕</button>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <label>Nome do Produto</label>
+    <input type="text" id="edit-prod-nome" placeholder="Ex: Batom Vermelho">
+    <label>Categoria</label>
+    <input type="text" id="edit-prod-categoria" placeholder="Ex: Maquiagem">
+    <label>Preço de Custo (R$)</label>
+    <input type="number" id="edit-prod-custo" placeholder="0,00" step="0.01">
+    <label>Preço de Venda (R$)</label>
+    <input type="number" id="edit-prod-venda" placeholder="0,00" step="0.01">
+    <label>Estoque Atual</label>
+    <input type="number" id="edit-prod-estoque" placeholder="0">
+    <label>Estoque Mínimo</label>
+    <input type="number" id="edit-prod-estoque-min" placeholder="5">
+    <div id="msg-editar-produto"></div>
+    <button class="btn btn-primary" onclick="salvarEdicaoProduto()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -1081,6 +1271,7 @@
         </div>
         <div style="text-align:right">
           <div class="produto-preco">R$ ${(p.venda||0).toFixed(2)}</div>
+          <button onclick="editarProduto('${p.id}')" style="margin-top:8px;padding:6px 12px;background:#eaf0fb;color:#2980b9;border:none;border-radius:8px;cursor:pointer;font-size:13px">✏️</button>
           <button onclick="excluirProduto('${p.id}')" style="margin-top:8px;padding:6px 12px;background:#fadbd8;color:#e74c3c;border:none;border-radius:8px;cursor:pointer;font-size:13px">🗑️</button>
         </div>
       </div>`).join('');
@@ -1297,6 +1488,64 @@
     }
   }
 
+  function editarProduto(id) {
+    const p = produtosCache.find(p => p.id === id);
+    if(!p) return;
+    document.getElementById('edit-prod-id').value = p.id;
+    document.getElementById('edit-prod-nome').value = p.nome || '';
+    document.getElementById('edit-prod-categoria').value = p.categoria || '';
+    document.getElementById('edit-prod-custo').value = p.custo || '';
+    document.getElementById('edit-prod-venda').value = p.venda || '';
+    document.getElementById('edit-prod-estoque').value = p.estoque || '';
+    document.getElementById('edit-prod-estoque-min').value = p.estoqueMin || '';
+    abrirModal('modal-editar-produto');
+  }
+
+  async function salvarEdicaoProduto() {
+    const id = document.getElementById('edit-prod-id').value;
+    const nome = document.getElementById('edit-prod-nome').value.trim();
+    const categoria = document.getElementById('edit-prod-categoria').value.trim();
+    const custo = parseFloat(document.getElementById('edit-prod-custo').value) || 0;
+    const venda = parseFloat(document.getElementById('edit-prod-venda').value) || 0;
+    const estoque = parseInt(document.getElementById('edit-prod-estoque').value) || 0;
+    const estoqueMin = parseInt(document.getElementById('edit-prod-estoque-min').value) || 5;
+    if(!nome) { mostrarMsg('msg-editar-produto','Digite o nome','error'); return; }
+    try {
+      await window.updateDoc(window.doc(window.db,'produtos',id), { nome, categoria, custo, venda, estoque, estoqueMin });
+      mostrarMsg('msg-editar-produto','Produto atualizado!','success');
+      setTimeout(() => { fecharModal('modal-editar-produto'); carregarProdutos(); carregarDashboard(); }, 1000);
+    } catch(e) { mostrarMsg('msg-editar-produto','Erro: '+e.message,'error'); }
+  }
+
+  function editarProduto(id) {
+    const p = produtosCache.find(p => p.id === id);
+    if(!p) return;
+    document.getElementById('edit-prod-id').value = p.id;
+    document.getElementById('edit-prod-nome').value = p.nome || '';
+    document.getElementById('edit-prod-categoria').value = p.categoria || '';
+    document.getElementById('edit-prod-custo').value = p.custo || '';
+    document.getElementById('edit-prod-venda').value = p.venda || '';
+    document.getElementById('edit-prod-estoque').value = p.estoque || '';
+    document.getElementById('edit-prod-estoque-min').value = p.estoqueMin || '';
+    abrirModal('modal-editar-produto');
+  }
+
+  async function salvarEdicaoProduto() {
+    const id = document.getElementById('edit-prod-id').value;
+    const nome = document.getElementById('edit-prod-nome').value.trim();
+    const categoria = document.getElementById('edit-prod-categoria').value.trim();
+    const custo = parseFloat(document.getElementById('edit-prod-custo').value) || 0;
+    const venda = parseFloat(document.getElementById('edit-prod-venda').value) || 0;
+    const estoque = parseInt(document.getElementById('edit-prod-estoque').value) || 0;
+    const estoqueMin = parseInt(document.getElementById('edit-prod-estoque-min').value) || 5;
+    if(!nome) { mostrarMsg('msg-editar-produto','Digite o nome','error'); return; }
+    try {
+      await window.updateDoc(window.doc(window.db,'produtos',id), { nome, categoria, custo, venda, estoque, estoqueMin });
+      mostrarMsg('msg-editar-produto','Produto atualizado!','success');
+      setTimeout(() => { fecharModal('modal-editar-produto'); carregarProdutos(); carregarDashboard(); }, 1000);
+    } catch(e) { mostrarMsg('msg-editar-produto','Erro: '+e.message,'error'); }
+  }
+
   window.navegarPara = navegarPara;
   window.abrirModal = abrirModal;
   window.fecharModal = fecharModal;
@@ -1320,6 +1569,14 @@
   window.carregarProdutos = carregarProdutos;
   window.carregarClientes = carregarClientes;
   window.carregarVendas = carregarVendas;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
+  window.editarProduto = editarProduto;
+  window.salvarEdicaoProduto = salvarEdicaoProduto;
   window.carregarFinanceiro = carregarFinanceiro;
 </script>
 
