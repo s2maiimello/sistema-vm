@@ -105,7 +105,7 @@
 <div id="page-vendas" class="page">
   <div class="tabs">
     <button class="tab active" onclick="filtrarVendas('todas')">Todas</button>
-    <button class="tab" onclick="filtrarVendas('fiado')">Fiado</button>
+    <button class="tab" onclick="filtrarVendas('A Prazo')">A Prazo</button>
     <button class="tab" onclick="filtrarVendas('pago')">Pagas</button>
   </div>
   <div id="lista-vendas"></div>
@@ -201,14 +201,14 @@
     <div id="carrinho" style="margin-bottom:12px"></div>
     <div id="venda-total" style="font-size:20px;font-weight:bold;color:#6c3483;margin-bottom:12px"></div>
     <label>Desconto (R$)</label>
-    <input type="number" id="venda-desconto" value="0" step="0.01">
+    <input type="number" id="venda-desconto" value="0" step="0.01" oninput="atualizarCarrinho()">
     <label>Forma de Pagamento</label>
     <select id="venda-pagamento">
       <option value="dinheiro">💵 Dinheiro</option>
       <option value="pix">📱 PIX</option>
       <option value="debito">💳 Cartão de Débito</option>
       <option value="credito">💳 Cartão de Crédito</option>
-      <option value="fiado">🤝 Fiado</option>
+      <option value="A Prazo">🤝 A Prazo</option>
     </select>
     <label>Observações</label>
     <textarea id="venda-obs" rows="2" placeholder="Observações..."></textarea>
@@ -519,13 +519,13 @@
     try {
       await window.addDoc(window.collection(window.db, 'vendas'), {
         clienteId, clienteNome: cliente?.nome || 'Consumidor', itens: carrinhoItens,
-        subtotal, desconto, total, pagamento, obs, status: pagamento === 'fiado' ? 'pendente' : 'pago', criadoEm: new Date()
+        subtotal, desconto, total, pagamento, obs, status: pagamento === 'A Prazo' ? 'pendente' : 'pago', criadoEm: new Date()
       });
       for(const item of carrinhoItens) {
         const prod = produtosCache.find(p => p.id === item.id);
         if(prod) await window.updateDoc(window.doc(window.db,'produtos',item.id), { estoque: prod.estoque - item.qtd });
       }
-      if(clienteId && pagamento === 'fiado') {
+      if(clienteId && pagamento === 'A Prazo') {
         const cli = clientesCache.find(c => c.id === clienteId);
         await window.updateDoc(window.doc(window.db,'clientes',clienteId), { divida: (cli?.divida||0) + total, totalComprado: (cli?.totalComprado||0) + total });
       }
@@ -562,12 +562,13 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
     let filtrado = vendasCache;
-    if(tipo === 'fiado') filtrado = vendasCache.filter(v => v.pagamento === 'fiado');
+    if(tipo === 'A Prazo') filtrado = vendasCache.filter(v => v.pagamento === 'A Prazo');
     if(tipo === 'pago') filtrado = vendasCache.filter(v => v.status === 'pago');
     renderizarVendas(filtrado);
   }
 
   async function carregarFinanceiro() {
+
     const snap = await window.getDocs(window.collection(window.db, 'clientes'));
     let totalReceber = 0, inadimplentes = 0;
     const lista = [];
