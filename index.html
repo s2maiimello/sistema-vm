@@ -670,13 +670,18 @@
         <div class="linha"></div>
         <p>Obrigada pela preferência! ❤️</p>
       </body></html>`;
-    const janela = window.open('','_blank','width=350,height=600');
-    janela.document.write(html);
-    janela.document.close();
-    janela.onload = () => {
-      janela.print();
-      janela.onafterprint = () => janela.close();
-    };
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:999;overflow-y:auto;';
+    modal.innerHTML = `
+      <div style="background:white;margin:20px;border-radius:16px;padding:20px;max-width:400px;margin:20px auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <strong style="color:#6c3483">🖨️ Cupom</strong>
+          <button onclick="this.closest('div[style]').parentElement.remove()" style="background:none;border:none;font-size:24px;cursor:pointer">✕</button>
+        </div>
+        <div id="cupom-conteudo" style="font-family:monospace;font-size:13px">${html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')}</div>
+        <button onclick="window.print()" style="width:100%;padding:14px;background:#6c3483;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin-top:12px">🖨️ Imprimir</button>
+      </div>`;
+    document.body.appendChild(modal);
   }
 
   function imprimirCupom(venda) {
@@ -713,13 +718,18 @@
         <div class="linha"></div>
         <p>Obrigada pela preferência! ❤️</p>
       </body></html>`;
-    const janela = window.open('','_blank','width=350,height=600');
-    janela.document.write(html);
-    janela.document.close();
-    janela.onload = () => {
-      janela.print();
-      janela.onafterprint = () => janela.close();
-    };
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:999;overflow-y:auto;';
+    modal.innerHTML = `
+      <div style="background:white;margin:20px;border-radius:16px;padding:20px;max-width:400px;margin:20px auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <strong style="color:#6c3483">🖨️ Cupom</strong>
+          <button onclick="this.closest('div[style]').parentElement.remove()" style="background:none;border:none;font-size:24px;cursor:pointer">✕</button>
+        </div>
+        <div id="cupom-conteudo" style="font-family:monospace;font-size:13px">${html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')}</div>
+        <button onclick="window.print()" style="width:100%;padding:14px;background:#6c3483;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin-top:12px">🖨️ Imprimir</button>
+      </div>`;
+    document.body.appendChild(modal);
   }
 
   window.salvarProduto = salvarProduto;
