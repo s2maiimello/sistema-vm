@@ -534,6 +534,7 @@
         await window.updateDoc(window.doc(window.db,'clientes',clienteId), { divida: (cli?.divida||0) + total, totalComprado: (cli?.totalComprado||0) + total });
       }
       mostrarMsg('msg-venda','Venda finalizada!','success');
+      imprimirCupom({clienteNome: cliente?.nome || 'Consumidor', itens: carrinhoItens, subtotal, desconto, total, pagamento});
       carrinhoItens = [];
       setTimeout(() => { fecharModal('modal-venda'); carregarProdutos(); carregarClientes(); carregarVendas(); carregarDashboard(); carregarFinanceiro(); }, 1500);
     } catch(e) { mostrarMsg('msg-venda','Erro: '+e.message,'error'); }
@@ -623,6 +624,86 @@
       document.getElementById('card-estoque-baixo').style.display = 'block';
       document.getElementById('lista-estoque-baixo').innerHTML = prodsBaixo.map(p => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee"><span>${p.nome}</span><span class="badge badge-low">${p.estoque} un</span></div>`).join('');
     }
+  }
+
+  function imprimirCupom(venda) {
+    const data = new Date().toLocaleString('pt-BR');
+    const itens = venda.itens.map(i => `
+      <tr>
+        <td>${i.nome}</td>
+        <td style="text-align:center">${i.qtd}</td>
+        <td style="text-align:right">R$ ${(i.preco*i.qtd).toFixed(2)}</td>
+      </tr>`).join('');
+    const html = `
+      <html><head><style>
+        body { font-family: monospace; width: 300px; margin: 0 auto; font-size: 13px; }
+        h2 { text-align: center; font-size: 16px; margin-bottom: 4px; }
+        p { text-align: center; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        td { padding: 4px 2px; }
+        .linha { border-top: 1px dashed #000; margin: 8px 0; }
+        .total { font-size: 15px; font-weight: bold; text-align: right; }
+        @media print { body { width: 100%; } }
+      </style></head><body>
+        <h2>🛍️ Sistema V&M</h2>
+        <p>${data}</p>
+        <p>Cliente: <strong>${venda.clienteNome}</strong></p>
+        <div class="linha"></div>
+        <table>
+          <tr><th style="text-align:left">Produto</th><th>Qtd</th><th style="text-align:right">Valor</th></tr>
+          ${itens}
+        </table>
+        <div class="linha"></div>
+        ${venda.desconto > 0 ? `<p>Subtotal: R$ ${venda.subtotal.toFixed(2)}</p><p>Desconto: - R$ ${venda.desconto.toFixed(2)}</p>` : ''}
+        <p class="total">TOTAL: R$ ${venda.total.toFixed(2)}</p>
+        <p>Pagamento: ${venda.pagamento}</p>
+        <div class="linha"></div>
+        <p>Obrigada pela preferência! ❤️</p>
+      </body></html>`;
+    const janela = window.open('','_blank','width=350,height=600');
+    janela.document.write(html);
+    janela.document.close();
+    janela.print();
+  }
+
+  function imprimirCupom(venda) {
+    const data = new Date().toLocaleString('pt-BR');
+    const itens = venda.itens.map(i => `
+      <tr>
+        <td>${i.nome}</td>
+        <td style="text-align:center">${i.qtd}</td>
+        <td style="text-align:right">R$ ${(i.preco*i.qtd).toFixed(2)}</td>
+      </tr>`).join('');
+    const html = `
+      <html><head><style>
+        body { font-family: monospace; width: 300px; margin: 0 auto; font-size: 13px; }
+        h2 { text-align: center; font-size: 16px; margin-bottom: 4px; }
+        p { text-align: center; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        td { padding: 4px 2px; }
+        .linha { border-top: 1px dashed #000; margin: 8px 0; }
+        .total { font-size: 15px; font-weight: bold; text-align: right; }
+        @media print { body { width: 100%; } }
+      </style></head><body>
+        <h2>🛍️ Sistema V&M</h2>
+        <p>${data}</p>
+        <p>Cliente: <strong>${venda.clienteNome}</strong></p>
+        <div class="linha"></div>
+        <table>
+          <tr><th style="text-align:left">Produto</th><th>Qtd</th><th style="text-align:right">Valor</th></tr>
+          ${itens}
+        </table>
+        <div class="linha"></div>
+        ${venda.desconto > 0 ? `<p>Subtotal: R$ ${venda.subtotal.toFixed(2)}</p><p>Desconto: - R$ ${venda.desconto.toFixed(2)}</p>` : ''}
+        <p class="total">TOTAL: R$ ${venda.total.toFixed(2)}</p>
+        <p>Pagamento: ${venda.pagamento}</p>
+        <div class="linha"></div>
+        <p>Obrigada pela preferência! ❤️</p>
+      </body></html>`;
+    const janela = window.open('','_blank','width=350,height=600');
+    janela.document.write(html);
+    janela.document.close();
+    janela.print();
   }
 
   window.salvarProduto = salvarProduto;
