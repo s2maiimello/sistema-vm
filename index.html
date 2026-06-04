@@ -212,6 +212,12 @@
     </select>
     <label>Observações</label>
     <textarea id="venda-obs" rows="2" placeholder="Observações..."></textarea>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input type="checkbox" id="venda-imprimir" checked style="width:auto;margin:0"> Imprimir cupom ao finalizar
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input type="checkbox" id="venda-imprimir" checked style="width:auto;margin:0"> Imprimir cupom ao finalizar
+    </label>
     <div id="msg-venda"></div>
     <button class="btn btn-success" onclick="finalizarVenda()">✅ Finalizar Venda</button>
   </div>
@@ -534,7 +540,9 @@
         await window.updateDoc(window.doc(window.db,'clientes',clienteId), { divida: (cli?.divida||0) + total, totalComprado: (cli?.totalComprado||0) + total });
       }
       mostrarMsg('msg-venda','Venda finalizada!','success');
-      imprimirCupom({clienteNome: cliente?.nome || 'Consumidor', itens: carrinhoItens, subtotal, desconto, total, pagamento});
+      const deveImprimir = document.getElementById('venda-imprimir').checked;
+      if(deveImprimir) const deveImprimir = document.getElementById('venda-imprimir').checked;
+      if(deveImprimir) imprimirCupom({clienteNome: cliente?.nome || 'Consumidor', itens: carrinhoItens, subtotal, desconto, total, pagamento});
       carrinhoItens = [];
       setTimeout(() => { fecharModal('modal-venda'); carregarProdutos(); carregarClientes(); carregarVendas(); carregarDashboard(); carregarFinanceiro(); }, 1500);
     } catch(e) { mostrarMsg('msg-venda','Erro: '+e.message,'error'); }
@@ -557,7 +565,9 @@
         <div style="display:flex;justify-content:space-between">
           <div><strong>${v.clienteNome}</strong><br><small>${data} • ${v.pagamento}</small></div>
           <div style="text-align:right"><strong style="color:#6c3483">R$ ${(v.total||0).toFixed(2)}</strong><br>
-          <span class="badge ${v.status==='pago'?'badge-ok':'badge-low'}">${v.status==='pago'?'Pago':'Pendente'}</span></div>
+          <span class="badge ${v.status==='pago'?'badge-ok':'badge-low'}">${v.status==='pago'?'Pago':'Pendente'}</span>
+          <br><button onclick='imprimirCupom({clienteNome:"${v.clienteNome}",itens:${JSON.stringify(v.itens)},subtotal:${v.subtotal},desconto:${v.desconto},total:${v.total},pagamento:"${v.pagamento}"})' style="margin-top:6px;padding:6px 10px;background:#eaf0fb;color:#2980b9;border:none;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Reimprimir</button>
+          </div>
         </div>
       </div>`;
     }).join('');
