@@ -673,7 +673,10 @@
     const janela = window.open('','_blank','width=350,height=600');
     janela.document.write(html);
     janela.document.close();
-    janela.print();
+    janela.onload = () => {
+      janela.print();
+      janela.onafterprint = () => janela.close();
+    };
   }
 
   function imprimirCupom(venda) {
@@ -713,7 +716,10 @@
     const janela = window.open('','_blank','width=350,height=600');
     janela.document.write(html);
     janela.document.close();
-    janela.print();
+    janela.onload = () => {
+      janela.print();
+      janela.onafterprint = () => janela.close();
+    };
   }
 
   window.salvarProduto = salvarProduto;
