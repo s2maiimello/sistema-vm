@@ -411,6 +411,8 @@
   }
 
   async function excluirProduto(id) {
+    const senha = prompt('Digite a senha para excluir:');
+    if(senha !== 'Mai2006') { alert('Senha incorreta!'); return; }
     if(!confirm('Excluir este produto?')) return;
     await window.deleteDoc(window.doc(window.db, 'produtos', id));
     carregarProdutos();
@@ -468,6 +470,8 @@
   }
 
   async function excluirCliente(id) {
+    const senha = prompt('Digite a senha para excluir:');
+    if(senha !== 'Mai2006') { alert('Senha incorreta!'); return; }
     if(!confirm('Excluir este cliente?')) return;
     await window.deleteDoc(window.doc(window.db, 'clientes', id));
     carregarClientes();
