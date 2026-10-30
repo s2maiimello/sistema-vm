@@ -149,6 +149,7 @@ label{font-size:14px;color:#555;margin-bottom:4px;display:block}
       <div class="dts"><div><label for="r-de">De</label><input type="date" id="r-de"></div><div><label for="r-ate">Até</label><input type="date" id="r-ate"></div></div>
       <button class="btn b" data-act="gerarRel">Consultar extrato</button>
       <button class="btn p" data-act="impRel">🖨️ Imprimir extrato</button>
+      <button class="btn g" data-act="wppRel">📲 Enviar extrato por WhatsApp</button>
     </div>
     <div id="r-prev"></div>
   </div>
@@ -225,6 +226,7 @@ label{font-size:14px;color:#555;margin-bottom:4px;display:block}
   <div class="mh noprint"><strong style="color:var(--p)">🖨️ Cupom da venda</strong><button class="x" data-act="close" data-id="cupom-modal" aria-label="Fechar">✕</button></div>
   <div id="cupom-c"></div>
   <button class="btn p noprint" style="margin-top:12px" data-act="print">🖨️ Imprimir</button>
+  <button class="btn g noprint" data-act="wppCupom">📲 Enviar por WhatsApp</button>
 </div></div>
 
 <div id="extrato-print"></div>
@@ -353,6 +355,7 @@ function addCart(id,q){
   rCart();toast('Adicionado: '+p.nome);
 }
 function cupom(v){
+  S.cup=v;
   $('cupom-c').innerHTML=`<div class="c"><b>🛍️ Sistema V&amp;M</b><br><small>${when(v.criadoEm).toLocaleString('pt-BR')}</small><br><small>Cliente: ${esc(v.clienteNome)}</small></div><hr>${(v.itens||[]).map(i=>`<div class="row"><span>${esc(i.nome)} x${i.qtd}</span><span>${R(i.preco*i.qtd)}</span></div>`).join('')}<hr>${v.desconto>0?`<div class="row"><span>Subtotal:</span><span>${R(v.subtotal)}</span></div><div class="row"><span>Desconto:</span><span>- ${R(v.desconto)}</span></div>`:''}<div class="row tot"><span>TOTAL:</span><span>${R(v.total)}</span></div><small>Pagamento: ${esc(v.pagamento)}</small><hr><div class="c"><small>Obrigada pela preferência! ❤️</small></div>`;
   $('cupom-modal').classList.add('on');
 }
@@ -384,6 +387,24 @@ function extHtml(x){
   const f=s=>fd(new Date(s+'T12:00:00'));
   return `<h2 style="color:#6c3483">V&amp;M Variedades</h2><p><b>Extrato do cliente: ${esc(x.c.nome)}</b>${x.c.whatsapp?' • '+esc(x.c.whatsapp):''}</p><p><small>Período: ${x.de?f(x.de):'desde o início'} a ${x.ate?f(x.ate):'hoje'} • Emitido em ${fd(new Date())}</small></p>${extTable(x)}<p style="margin-top:12px;font-size:16px"><b>Saldo devedor: ${R(x.fim)}</b></p>`;
 }
+/* ---------- envio por WhatsApp (texto pronto, abre o WhatsApp para você enviar) ---------- */
+const waNum=t=>{const d=String(t||'').replace(/\D/g,'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):''};
+function wpp(texto,tel){window.open('https://wa.me/'+waNum(tel)+'?text='+encodeURIComponent(texto),'_blank','noopener')}
+function cupText(v){
+  return ['*🛍️ V&M Variedades*',when(v.criadoEm).toLocaleString('pt-BR'),'Cliente: '+v.clienteNome,'',
+    ...(v.itens||[]).map(i=>`• ${i.nome} x${i.qtd} — ${R(i.preco*i.qtd)}`),'',
+    ...(v.desconto>0?[`Subtotal: ${R(v.subtotal)}`,`Desconto: − ${R(v.desconto)}`]:[]),
+    `*TOTAL: ${R(v.total)}*`,'Pagamento: '+v.pagamento,'','Obrigada pela preferência! ❤️'].join('\n');
+}
+function extText(x){
+  const f=d=>fd(new Date(d+'T12:00:00'));
+  const l=x.rows.map(m=>`${fd(m.d)} ${m.t==='compra'?'🛍️':'💰'} ${m.desc} — ${m.t==='compra'?'+':'−'}${R(m.v)} (saldo ${R(m.s)})`);
+  let cortou=false;while(l.join('\n').length>2800&&l.length>1){l.shift();cortou=true}
+  return ['*V&M Variedades*','*Extrato: '+x.c.nome+'*','Período: '+(x.de?f(x.de):'desde o início')+' a '+(x.ate?f(x.ate):'hoje'),'',
+    cortou?'(mostrando só as movimentações mais recentes)':'Saldo anterior: '+R(x.ant),...l,'','*Saldo devedor: '+R(x.fim)+'*'].join('\n');
+}
+function wppExt(x){if(!x)return toast('Selecione um cliente','er');wpp(extText(x),x.c.whatsapp)}
+
 function printExt(x){
   if(!x)return toast('Selecione um cliente','er');
   $('extrato-print').innerHTML=extHtml(x);document.body.classList.add('pe');
@@ -402,7 +423,7 @@ function rFM(){
   $('f-sel').value=S.ficha;
   const x=S.ficha&&extrato(S.ficha);
   if(x){const tc=x.rows.filter(m=>m.t==='compra').reduce((s,m)=>s+m.v,0),tp=x.rows.filter(m=>m.t==='pag').reduce((s,m)=>s+m.v,0);
-    $('f-det').innerHTML=`<div class="card"><h2>📄 ${esc(x.c.nome)}</h2><div class="row"><span>Saldo devedor</span><b class="${x.c.divida>0?'divida':'sem'}">${R(x.c.divida)}</b></div><div class="row"><span>Total comprado a prazo</span><span>${R(tc)}</span></div><div class="row"><span>Total pago</span><span>${R(tp)}</span></div><button class="btn g" style="margin-top:10px" data-act="pagar" data-id="${x.c.id}">💰 Receber pagamento</button><button class="btn s" data-act="impFicha" data-id="${x.c.id}">🖨️ Imprimir ficha</button></div><div class="card"><h2>Histórico</h2><div class="sc">${extTable(x)}</div></div>`;
+    $('f-det').innerHTML=`<div class="card"><h2>📄 ${esc(x.c.nome)}</h2><div class="row"><span>Saldo devedor</span><b class="${x.c.divida>0?'divida':'sem'}">${R(x.c.divida)}</b></div><div class="row"><span>Total comprado a prazo</span><span>${R(tc)}</span></div><div class="row"><span>Total pago</span><span>${R(tp)}</span></div><button class="btn g" style="margin-top:10px" data-act="pagar" data-id="${x.c.id}">💰 Receber pagamento</button><button class="btn s" data-act="impFicha" data-id="${x.c.id}">🖨️ Imprimir ficha</button><button class="btn g" data-act="wppFicha" data-id="${x.c.id}">📲 Enviar por WhatsApp</button></div><div class="card"><h2>Histórico</h2><div class="sc">${extTable(x)}</div></div>`;
   }else $('f-det').innerHTML=empty('Selecione um cliente para ver a ficha');
   $('l-mov').innerHTML=all.length?all.slice(0,40).map(m=>`<div class="item"><div><strong>${esc(m.nome)}</strong><p>${fd(m.d)} • ${esc(m.desc)}</p></div><div class="r"><b class="${m.t==='compra'?'divida':'sem'}">${m.t==='compra'?'+':'−'} ${R(m.v)}</b><br><small>${m.t==='compra'?'Compra fiada':'Pagamento'}</small></div></div>`).join(''):empty('Nenhuma movimentação registrada');
 }
@@ -489,6 +510,9 @@ const A={
   filtro:t=>{S.filtro=t;rVend()},
   cupom:id=>{const v=S.vend.find(x=>x.id===id);if(v)cupom(v)},
 
+  wppCupom:()=>{const v=S.cup;if(!v)return;wpp(cupText(v),S.cli.find(c=>c.id===v.clienteId)?.whatsapp)},
+  wppFicha:id=>wppExt(extrato(id)),
+  wppRel:()=>wppExt(extrato($('r-cli').value,$('r-de').value,$('r-ate').value)),
   fsec:id=>{S.fsec=id;rFM()},
   abrirFicha:id=>{S.ficha=id;S.fsec='fic';rFM();scrollTo(0,0)},
   regMov:async(_,btn)=>{
