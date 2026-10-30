@@ -51,6 +51,14 @@ label{font-size:14px;color:#555;margin-bottom:4px;display:block}
 #cupom-box{background:#fff;margin:20px auto;border-radius:16px;padding:20px;max-width:380px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 #cupom-box hr{border:0;border-top:1px dashed #aaa;margin:8px 0}.c{text-align:center}.tot{font-weight:700;font-size:15px}
 @media print{body>:not(#cupom-modal){display:none!important}#cupom-modal{position:static;background:none}#cupom-box{margin:0;padding:0;max-width:none}.noprint{display:none!important}}
+
+.ftab{padding:8px 16px;border-radius:20px;border:1px solid #ccc;background:#fff;font-size:14px;cursor:pointer;white-space:nowrap}
+.ftab.active{background:var(--p);color:#fff;border-color:var(--p)}
+.sc{overflow-x:auto}.tb{width:100%;border-collapse:collapse;font-size:13px}
+.tb th,.tb td{padding:6px 8px;border-bottom:1px solid #e3e3e3;text-align:left}.tb th{color:var(--p)}.tb .n{text-align:right;white-space:nowrap}
+.dts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#extrato-print{display:none}
+@media print{body.pe>:not(#extrato-print){display:none!important}body.pe #extrato-print{display:block!important;font-family:system-ui,Arial,sans-serif;color:#000}body.pe .tb th,body.pe .tb td{border-bottom:1px solid #999;color:#000}}
 </style>
 </head>
 <body>
@@ -97,11 +105,53 @@ label{font-size:14px;color:#555;margin-bottom:4px;display:block}
 </section>
 
 <section id="page-financeiro" class="page">
-  <div class="stats">
-    <div class="stat"><b id="f-rec">R$ 0,00</b><small>A receber</small></div>
-    <div class="stat"><b id="f-inad">0</b><small>Clientes com dívida</small></div>
+  <div class="tabs">
+    <button class="ftab active" data-act="fsec" data-id="geral">📊 Visão geral</button>
+    <button class="ftab" data-act="fsec" data-id="cli">👥 Clientes</button>
+    <button class="ftab" data-act="fsec" data-id="fic">📄 Fichas</button>
+    <button class="ftab" data-act="fsec" data-id="mov">🔄 Movimentações</button>
+    <button class="ftab" data-act="fsec" data-id="rel">🖨️ Relatórios</button>
   </div>
-  <div class="card"><h2>💵 Contas em aberto</h2><div id="l-fin"></div></div>
+  <div id="fs-geral">
+    <div class="stats">
+      <div class="stat"><b id="f-rec">R$ 0,00</b><small>A receber</small></div>
+      <div class="stat"><b id="f-inad">0</b><small>Clientes com dívida</small></div>
+      <div class="stat"><b id="f-mes-c">R$ 0,00</b><small>Fiado no mês</small></div>
+      <div class="stat"><b id="f-mes-p">R$ 0,00</b><small>Recebido no mês</small></div>
+    </div>
+    <div class="card"><h2>💵 Contas em aberto</h2><div id="l-fin"></div></div>
+  </div>
+  <div id="fs-cli" hidden>
+    <input type="search" id="busca-fcli" placeholder="Buscar cliente" aria-label="Buscar cliente">
+    <button class="btn p" data-act="novoCli">+ Novo cliente</button>
+    <div id="l-fcli"></div>
+  </div>
+  <div id="fs-fic" hidden>
+    <label for="f-sel">Cliente</label><select id="f-sel"></select>
+    <div id="f-det"></div>
+  </div>
+  <div id="fs-mov" hidden>
+    <div class="card"><h2>Registrar movimentação</h2>
+      <label for="m-cli2">Cliente</label><select id="m-cli2"></select>
+      <label for="m-tipo">Tipo</label>
+      <select id="m-tipo"><option value="compra">🛍️ Compra fiada (soma na dívida)</option><option value="pag">💰 Pagamento recebido (abate a dívida)</option></select>
+      <label for="m-valor">Valor (R$)</label><input type="number" id="m-valor" inputmode="decimal" step="0.01" min="0" placeholder="0,00">
+      <div id="m-forma-w" hidden><label for="m-forma">Forma de pagamento</label><select id="m-forma"><option>Dinheiro</option><option>PIX</option><option>Cartão</option></select></div>
+      <label for="m-desc">Descrição</label><input id="m-desc" placeholder="Ex: 2 batons e 1 perfume">
+      <label for="m-data">Data</label><input type="date" id="m-data">
+      <button class="btn g" data-act="regMov">Registrar</button>
+    </div>
+    <div class="card"><h2>Últimas movimentações</h2><div id="l-mov"></div></div>
+  </div>
+  <div id="fs-rel" hidden>
+    <div class="card"><h2>Extrato individual</h2>
+      <label for="r-cli">Cliente</label><select id="r-cli"></select>
+      <div class="dts"><div><label for="r-de">De</label><input type="date" id="r-de"></div><div><label for="r-ate">Até</label><input type="date" id="r-ate"></div></div>
+      <button class="btn b" data-act="gerarRel">Consultar extrato</button>
+      <button class="btn p" data-act="impRel">🖨️ Imprimir extrato</button>
+    </div>
+    <div id="r-prev"></div>
+  </div>
 </section>
 
 <section id="page-categorias" class="page">
@@ -177,6 +227,8 @@ label{font-size:14px;color:#555;margin-bottom:4px;display:block}
   <button class="btn p noprint" style="margin-top:12px" data-act="print">🖨️ Imprimir</button>
 </div></div>
 
+<div id="extrato-print"></div>
+
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,increment} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -193,7 +245,7 @@ const R=n=>'R$ '+(Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,
 const num=id=>parseFloat($(id).value)||0, int=id=>parseInt($(id).value)||0;
 const when=v=>v?.seconds?new Date(v.seconds*1000):new Date();
 const empty=t=>`<p class="empty">${t}</p>`;
-const S={prod:[],cli:[],vend:[],cat:[],cart:[],filtro:'todas'};
+const S={prod:[],cli:[],vend:[],cat:[],cart:[],pag:[],filtro:'todas',fsec:'geral',ficha:''};
 
 function toast(t,tipo='ok'){document.querySelectorAll('.toast').forEach(x=>x.remove());const e=document.createElement('div');e.className='toast '+tipo;e.setAttribute('role','status');e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),2800)}
 
@@ -206,7 +258,7 @@ const nomeSort=(a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'pt-BR
 const ler=async n=>(await getDocs(collection(db,n))).docs.map(d=>({id:d.id,...d.data()}));
 async function refresh(){
   try{
-    const [p,c,v,k]=await Promise.all(['produtos','clientes','vendas','categorias'].map(ler));
+    const [p,c,v,k,g]=await Promise.all(['produtos','clientes','vendas','categorias','pagamentos'].map(ler));S.pag=g;
     S.prod=p.sort(nomeSort);S.cli=c.sort(nomeSort);S.cat=k.sort(nomeSort);
     S.vend=v.sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
     render();
@@ -241,7 +293,7 @@ function onCode(ctx,cod){
 }
 
 /* ---------- renderização ---------- */
-function render(){stats();rProd();rCli();rVend();rFin();rCat()}
+function render(){stats();rProd();rCli();rVend();rFin();rCat();rFM()}
 
 function stats(){
   const rec=S.cli.reduce((s,c)=>s+(c.divida||0),0),hoje=new Date().toDateString();
@@ -303,6 +355,56 @@ function addCart(id,q){
 function cupom(v){
   $('cupom-c').innerHTML=`<div class="c"><b>🛍️ Sistema V&amp;M</b><br><small>${when(v.criadoEm).toLocaleString('pt-BR')}</small><br><small>Cliente: ${esc(v.clienteNome)}</small></div><hr>${(v.itens||[]).map(i=>`<div class="row"><span>${esc(i.nome)} x${i.qtd}</span><span>${R(i.preco*i.qtd)}</span></div>`).join('')}<hr>${v.desconto>0?`<div class="row"><span>Subtotal:</span><span>${R(v.subtotal)}</span></div><div class="row"><span>Desconto:</span><span>- ${R(v.desconto)}</span></div>`:''}<div class="row tot"><span>TOTAL:</span><span>${R(v.total)}</span></div><small>Pagamento: ${esc(v.pagamento)}</small><hr><div class="c"><small>Obrigada pela preferência! ❤️</small></div>`;
   $('cupom-modal').classList.add('on');
+}
+
+/* ---------- módulo Financeiro: fichas, movimentações e extratos ---------- */
+const fd=d=>d.toLocaleDateString('pt-BR');
+function movs(cid){
+  return [
+    ...S.vend.filter(v=>v.pagamento==='a prazo'&&(!cid||v.clienteId===cid)).map(v=>({t:'compra',cid:v.clienteId,nome:v.clienteNome,d:when(v.criadoEm),v:v.total||0,desc:v.manual?(v.itens?.[0]?.nome||'Compra fiada'):(v.itens||[]).map(i=>`${i.nome} x${i.qtd}`).join(', ')||'Compra'})),
+    ...S.pag.filter(p=>!cid||p.clienteId===cid).map(p=>({t:'pag',cid:p.clienteId,nome:p.nome,d:when(p.criadoEm),v:p.valor||0,desc:'Pagamento'+(p.forma?' ('+p.forma+')':'')+(p.obs?' - '+p.obs:'')}))
+  ].sort((a,b)=>(b.d-a.d)||(a.t===b.t?0:a.t==='compra'?1:-1)); // no mesmo dia, a compra vem antes do pagamento
+}
+function extrato(cid,de,ate){
+  const c=S.cli.find(x=>x.id===cid);if(!c)return null;
+  const all=movs(cid).reverse(),sg=m=>m.t==='compra'?m.v:-m.v;
+  let s=(c.divida||0)-all.reduce((a,m)=>a+sg(m),0); // saldo inicial (dívidas anteriores ao módulo)
+  const d0=de?new Date(de+'T00:00:00'):null,d1=ate?new Date(ate+'T23:59:59'):null,rows=[];let ant=null;
+  for(const m of all){
+    if(d0&&m.d<d0){s+=sg(m);continue}
+    if(d1&&m.d>d1)break;
+    if(ant===null)ant=s;s+=sg(m);rows.push({...m,s});
+  }
+  return {c,rows,ant:ant===null?s:ant,fim:s,de,ate};
+}
+function extTable(x){
+  return `<table class="tb"><thead><tr><th>Data</th><th>Descrição</th><th class="n">Compra</th><th class="n">Pago</th><th class="n">Saldo</th></tr></thead><tbody><tr><td colspan="4">Saldo anterior</td><td class="n">${R(x.ant)}</td></tr>${x.rows.map(m=>`<tr><td>${fd(m.d)}</td><td>${esc(m.desc)}</td><td class="n">${m.t==='compra'?R(m.v):''}</td><td class="n">${m.t==='pag'?R(m.v):''}</td><td class="n">${R(m.s)}</td></tr>`).join('')}</tbody></table>`;
+}
+function extHtml(x){
+  const f=s=>fd(new Date(s+'T12:00:00'));
+  return `<h2 style="color:#6c3483">V&amp;M Variedades</h2><p><b>Extrato do cliente: ${esc(x.c.nome)}</b>${x.c.whatsapp?' • '+esc(x.c.whatsapp):''}</p><p><small>Período: ${x.de?f(x.de):'desde o início'} a ${x.ate?f(x.ate):'hoje'} • Emitido em ${fd(new Date())}</small></p>${extTable(x)}<p style="margin-top:12px;font-size:16px"><b>Saldo devedor: ${R(x.fim)}</b></p>`;
+}
+function printExt(x){
+  if(!x)return toast('Selecione um cliente','er');
+  $('extrato-print').innerHTML=extHtml(x);document.body.classList.add('pe');
+  addEventListener('afterprint',()=>document.body.classList.remove('pe'),{once:true});window.print();
+}
+function fillSel(id,ph){const e=$(id),v=e.value;e.innerHTML=opts(S.cli,ph,c=>c.id,c=>c.nome);e.value=v}
+function rFM(){
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.id===S.fsec));
+  ['geral','cli','fic','mov','rel'].forEach(k=>$('fs-'+k).hidden=k!==S.fsec);
+  const ini=new Date(new Date().getFullYear(),new Date().getMonth(),1),all=movs(),mm=all.filter(m=>m.d>=ini);
+  $('f-mes-c').textContent=R(mm.filter(m=>m.t==='compra').reduce((s,m)=>s+m.v,0));
+  $('f-mes-p').textContent=R(mm.filter(m=>m.t==='pag').reduce((s,m)=>s+m.v,0));
+  const q=$('busca-fcli').value.toLowerCase(),l=S.cli.filter(c=>String(c.nome||'').toLowerCase().includes(q));
+  $('l-fcli').innerHTML=l.length?l.map(c=>`<div class="item"><div><h3>${esc(c.nome)}</h3><p>${esc(c.whatsapp||'Sem WhatsApp')}</p>${c.divida>0?`<span class="divida">Deve: ${R(c.divida)}</span>`:'<span class="sem">Sem dívidas</span>'}</div><div class="r"><button class="ib e" data-act="abrirFicha" data-id="${c.id}">📄 Ficha</button></div></div>`).join(''):empty(q?'Nenhum cliente encontrado':'Nenhum cliente cadastrado');
+  fillSel('f-sel','Selecionar cliente...');fillSel('m-cli2','Selecionar cliente...');fillSel('r-cli','Selecionar cliente...');
+  $('f-sel').value=S.ficha;
+  const x=S.ficha&&extrato(S.ficha);
+  if(x){const tc=x.rows.filter(m=>m.t==='compra').reduce((s,m)=>s+m.v,0),tp=x.rows.filter(m=>m.t==='pag').reduce((s,m)=>s+m.v,0);
+    $('f-det').innerHTML=`<div class="card"><h2>📄 ${esc(x.c.nome)}</h2><div class="row"><span>Saldo devedor</span><b class="${x.c.divida>0?'divida':'sem'}">${R(x.c.divida)}</b></div><div class="row"><span>Total comprado a prazo</span><span>${R(tc)}</span></div><div class="row"><span>Total pago</span><span>${R(tp)}</span></div><button class="btn g" style="margin-top:10px" data-act="pagar" data-id="${x.c.id}">💰 Receber pagamento</button><button class="btn s" data-act="impFicha" data-id="${x.c.id}">🖨️ Imprimir ficha</button></div><div class="card"><h2>Histórico</h2><div class="sc">${extTable(x)}</div></div>`;
+  }else $('f-det').innerHTML=empty('Selecione um cliente para ver a ficha');
+  $('l-mov').innerHTML=all.length?all.slice(0,40).map(m=>`<div class="item"><div><strong>${esc(m.nome)}</strong><p>${fd(m.d)} • ${esc(m.desc)}</p></div><div class="r"><b class="${m.t==='compra'?'divida':'sem'}">${m.t==='compra'?'+':'−'} ${R(m.v)}</b><br><small>${m.t==='compra'?'Compra fiada':'Pagamento'}</small></div></div>`).join(''):empty('Nenhuma movimentação registrada');
 }
 
 /* ---------- ações ---------- */
@@ -387,6 +489,29 @@ const A={
   filtro:t=>{S.filtro=t;rVend()},
   cupom:id=>{const v=S.vend.find(x=>x.id===id);if(v)cupom(v)},
 
+  fsec:id=>{S.fsec=id;rFM()},
+  abrirFicha:id=>{S.ficha=id;S.fsec='fic';rFM();scrollTo(0,0)},
+  regMov:async(_,btn)=>{
+    const cid=$('m-cli2').value,tipo=$('m-tipo').value,valor=num('m-valor'),desc=$('m-desc').value.trim(),dt=$('m-data').value;
+    const c=S.cli.find(x=>x.id===cid);
+    if(!c)return toast('Selecione o cliente','er');
+    if(!(valor>0))return toast('Informe um valor válido','er');
+    if(tipo==='pag'&&valor>(c.divida||0)+0.001)return toast('O valor é maior que a dívida ('+R(c.divida)+')','er');
+    const d=dt?new Date(dt+'T12:00:00'):new Date();btn.disabled=true;
+    try{
+      if(tipo==='compra'){
+        await addDoc(collection(db,'vendas'),{clienteId:cid,clienteNome:c.nome,itens:[{id:'',nome:desc||'Compra fiada',preco:valor,qtd:1}],subtotal:valor,desconto:0,total:valor,pagamento:'a prazo',obs:'',status:'pendente',manual:true,criadoEm:d});
+        await updateDoc(doc(db,'clientes',cid),{divida:increment(valor),totalComprado:increment(valor)});
+      }else{
+        await addDoc(collection(db,'pagamentos'),{clienteId:cid,nome:c.nome,valor,forma:$('m-forma').value,obs:desc,criadoEm:d});
+        await updateDoc(doc(db,'clientes',cid),{divida:increment(-valor)});
+      }
+      $('m-valor').value='';$('m-desc').value='';toast(tipo==='compra'?'Compra fiada registrada':'Pagamento registrado');await refresh();
+    }catch(e){toast('Erro: '+e.message,'er')}finally{btn.disabled=false}
+  },
+  gerarRel:()=>{const x=extrato($('r-cli').value,$('r-de').value,$('r-ate').value);$('r-prev').innerHTML=x?'<div class="card"><div class="sc">'+extHtml(x)+'</div></div>':empty('Selecione um cliente')},
+  impRel:()=>printExt(extrato($('r-cli').value,$('r-de').value,$('r-ate').value)),
+  impFicha:id=>printExt(extrato(id)),
   pagar:async id=>{
     const c=S.cli.find(x=>x.id===id);if(!c)return;
     const txt=prompt(`Receber pagamento de ${c.nome}\nDívida: ${R(c.divida)}\n\nValor recebido:`);if(txt===null)return;
@@ -411,11 +536,17 @@ document.addEventListener('input',e=>{
   if(e.target.id==='busca-prod')rProd();
   if(e.target.id==='busca-cli')rCli();
   if(e.target.id==='v-desc')rCart();
+  if(e.target.id==='busca-fcli')rFM();
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='m-tipo')$('m-forma-w').hidden=e.target.value!=='pag';
+  if(e.target.id==='f-sel'){S.ficha=e.target.value;rFM()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.on').forEach(m=>A.close(m.id))});
 const net=()=>{const o=navigator.onLine;$('net').textContent=o?'● Online':'● Offline';$('net').style.color=o?'#fff':'#ffd2cc'};
 addEventListener('online',net);addEventListener('offline',net);net();
 
+$('m-data').value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 refresh();
 </script>
 </body>
